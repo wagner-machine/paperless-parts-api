@@ -1,0 +1,902 @@
+openapi: "3.0.2"
+
+info:
+  title: "Paperless Parts API"
+  description: "These API docs describe how to interact with the Paperless Parts API. Currently, the API focuses on providing read-only access to quote and order data from the Paperless Parts quoting software. Authorization is done via an API key. All users of the Paperless Parts quoting software can generate an API Token which grants access to all of the endpoints documented here. You can use the 'Execute' button in an endpoint's documentation on this page to try out the endpoint. This will send a request to the endpoint on the Paperless Parts server and display the result on this page. Before doing so, however, you'll need to click on the 'Authorize' button at the top of the screen, and in the 'Value' field enter 'API-Token <api_token>', where <api_token> is your Paperless Parts API Token."
+  version: "1.0"
+  termsOfService: "https://www.paperlessparts.com/web-service-agreement/"
+  contact:
+    name: "Paperless Parts"
+    url: "https://www.paperlessparts.com"
+    email: "support@paperlessparts.com"
+
+security:
+- app_id: []
+
+servers:
+- url: "https://api.paperlessparts.com/"
+
+tags:
+  - name: Quotes
+    description: Endpoints relating to Quotes
+
+paths:
+  /quotes/public/new_sent:
+    get:
+      summary: "List new quote numbers"
+      description: "List the numbers of new quotes that have been sent. If the number of the last known sent quote is supplied, this endpoint will return a list of the numbers of the quotes sent after the specified quote. If no number is provided, this endpoint will return a list of the numbers of all sent quotes. Note that the quote numbers will be returned in the order the quotes were sent, not necessarily in ascending numerical order."
+      operationId: 'NewQuoteNumbers'
+      parameters:
+        - $ref: '#/components/parameters/last_quote'
+      tags:
+        - Quotes
+      responses:
+        200:
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuoteNumberArray'
+        404:
+          description: Not found response
+          content:
+            text/plain:
+              schema:
+                title: Quote not found
+                type: string
+                example: "Error: Not Found"
+
+  /quotes/public/{quoteNumber}:
+    get:
+      summary: "Get quote details"
+      description: "Get the details for a specific quote."
+      operationId: 'QuoteDetails'
+      parameters:
+        - $ref: '#/components/parameters/quoteNumber'
+      tags:
+        - Quotes
+      responses:
+        200:
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Quote'
+        404:
+          description: Not found response
+          content:
+            text/plain:
+              schema:
+                title: Quote not found
+                type: string
+                example: "Error: Not Found"
+
+  /orders/public/{orderNumber}:
+    get:
+      summary: "Get order details"
+      description: "Get the details for a specific order."
+      operationId: 'OrderDetails'
+      parameters:
+        - $ref: '#/components/parameters/orderNumber'
+      tags:
+        - Orders
+      responses:
+        200:
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        404:
+          description: Not found response
+          content:
+            text/plain:
+              schema:
+                title: Quote not found
+                type: string
+                example: "Error: Not Found"
+
+components:
+
+  securitySchemes:
+    app_id:
+      type: apiKey
+      description: "API key to authorize requests."
+      name: Authorization
+      in: header
+
+  parameters:
+    last_quote:
+      name: last_quote
+      in: query
+      description: "**Last known sent quote number**. You may supply the number of the last known quote."
+      schema:
+        $ref: '#/components/schemas/QuoteNumber'
+    quoteNumber:
+      name: quoteNumber
+      in: path
+      description: "The quote number"
+      required: true
+      schema:
+        $ref: '#/components/schemas/QuoteNumber'
+    orderNumber:
+      name: orderNumber
+      in: path
+      description: "The order number"
+      required: true
+      schema:
+        $ref: '#/components/schemas/OrderNumber'
+
+  schemas:
+    QuoteNumber:
+      type: integer
+      description: "A unique identifier for a Quote"
+      example: 37
+    QuoteNumberArray:
+      type: array
+      items:
+        $ref: '#/components/schemas/QuoteNumber'
+      description: "An array of Quote numbers"
+      example: [39, 38, 40]
+    QuoteExpedite:
+      type: object
+      description: "Expedites represent an additional option for pricing where quote recipients can request a shorter lead time, with an additional markup applied to the unit price."
+      properties:
+        id:
+          type: integer
+        lead_time:
+          type: integer
+          description: "Days"
+        markup:
+          type: number
+          format: float
+          description: "Percent"
+        unit_price:
+          type: number
+          format: float
+        total_price:
+          type: number
+          format: float
+    QuoteQuantity:
+      type: object
+      description: "A quantity object represents a unit price and a numerical quantity associated with a component. A component can have many quantities, and the set of quantities represents the pricing options available to the recipient of a quote."
+      properties:
+        id:
+          type: integer
+        quantity:
+          type: integer
+        markup_1_price:
+          type: number
+          format: float
+          description: "Users of Paperless Parts can specify up to two distinct markup values on a component."
+          nullable: true
+        markup_1_name:
+          type: string
+          nullable: true
+        markup_2_price:
+          type: number
+          format: float
+          description: "Users of Paperless Parts can specify up to two distinct markup values on a component."
+          nullable: true
+        markup_2_name:
+          type: string
+          nullable: true
+        unit_price:
+          type: number
+          format: float
+        total_price:
+          type: number
+          format: float
+        total_price_with_required_add_ons:
+          type: number
+          format: float
+        lead_time:
+          type: integer
+          description: "Days"
+        expedites:
+          type: array
+          items:
+            $ref: '#/components/schemas/QuoteExpedite'
+    QuoteProcess:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        external_name:
+          type: string
+          nullable: true
+    QuoteMaterial:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        display_name:
+          type: string
+    QuoteAddOnQuantity:
+      type: object
+      properties:
+        manual_price:
+          type: number
+          format: float
+        quantity:
+          type: integer
+    QuoteAddOn:
+      type: object
+      properties:
+        is_required:
+          type: boolean
+        name:
+          type: string
+        quantities:
+            type: array
+            items:
+              $ref: '#/components/schemas/QuoteAddOnQuantity'
+    QuoteRootComponent:
+      type: object
+      description: "A root component houses the pricing information for a quote item. Every quote item has a root component. In the case of an automatic quote item, the root component corresponds to a part; in the case of a manual quote item, which does not have an associated part, the root component stores the manual pricing data. As the name 'root component' implies, it is possible for a quote item to have many components, as in the case of an assembly of nested parts. Only the root Component object will be explicitly included in a QuoteItem, but the IDs of all of the components can be accessed via the QuoteItem's 'component_ids' property. The pricing information for all of the non-root components is aggregated and displayed in the root component."
+      properties:
+        id:
+          type: integer
+        part:
+          type: object
+          nullable: true
+          properties:
+            filename:
+              type: string
+            thumbnail_url:
+              type: string
+              format: url
+              nullable: true
+              description: "Will be null when the export_controlled field on the quote is true"
+            url:
+              type: string
+              format: url
+              nullable: true
+              description: "Will be null when the export_controlled field on the quote is true"
+            supporting_files:
+              type: array
+              items:
+                $ref: '#/components/schemas/OrderSupportingFile'
+        part_number:
+          type: string
+          nullable: true
+        revision:
+          type: string
+          nullable: true
+        description:
+          type: string
+          nullable: true
+        type:
+          type: string
+          enum: ['assembled', 'manufactured', 'purchased']
+        quantities:
+          type: array
+          items:
+            $ref: '#/components/schemas/QuoteQuantity'
+        finishes:
+          type: array
+          items:
+            type: string
+          description: "Note: this field is deprecated. Finishes now show up as Operations."
+        process:
+          $ref: '#/components/schemas/QuoteProcess'
+        material:
+          $ref: '#/components/schemas/QuoteMaterial'
+        material_operations:
+          type: array
+          items:
+            $ref: '#/components/schemas/Operation'
+        shop_operations:
+          type: array
+          items:
+            $ref: '#/components/schemas/Operation'
+        material_notes:
+          type: string
+          nullable: true
+        add_ons:
+          type: array
+          items:
+            $ref: '#/components/schemas/QuoteAddOn'
+    QuoteItem:
+      type: object
+      description: "A quote item represents a line item in a quote. Quote items can either be manual or automatic, as indicated by the 'type' property. Automatic quote items are those generated by adding a part to a quote. Pricing data for automatic quote items is automatically populated using the process, material, and operations, if they exist. Manual quote items do not have an associated part, so the pricing information must be inputted manually."
+      properties:
+        id:
+          type: integer
+        type:
+          type: string
+          enum: ['automatic', 'manual']
+          description: "Indicates whether the quote item is associated with a part (automatic pricing), or not (manual pricing)."
+        root_component:
+          $ref: '#/components/schemas/QuoteRootComponent'
+        position:
+          type: integer
+          description: "The position of the quote item in the quote display, indexed from 1."
+        export_controlled:
+          type: boolean
+          description: "Whether or not this quote item contains data that is export controlled (ITAR) by the US Government."
+        component_ids:
+          type: array
+          items:
+            type: integer
+        private_notes:
+          type: string
+          nullable: true
+        public_notes:
+          type: string
+          nullable: true
+    QuoteCustomer:
+      type: object
+      properties:
+        id:
+          type: integer
+        first_name:
+          type: string
+        last_name:
+          type: string
+        email:
+          type: string
+          format: email
+        notes:
+          type: string
+          nullable: true
+        company:
+          type: object
+          properties:
+            id:
+              type: integer
+            notes:
+              type: string
+              nullable: true
+            metrics:
+              type: object
+              properties:
+                order_revenue_all_time:
+                  type: number
+                  format: float
+                order_revenue_last_thirty_days:
+                  type: number
+                  format: float
+                quotes_sent_all_time:
+                  type: integer
+                quotes_sent_last_thirty_days:
+                  type: integer
+            business_name:
+              type: string
+            erp_code:
+              type: string
+    QuoteSalesPerson:
+      type: object
+      properties:
+        first_name:
+          type: string
+        last_name:
+          type: string
+        email:
+          type: string
+          format: email
+    ParentQuote:
+      type: object
+      description: "Basic information about the quote this was copied from, if any. This field may be NULL."
+      properties:
+        id:
+          type: integer
+        number:
+          type: integer
+        status:
+          type: string
+    ParentSupplierOrder:
+      type: object
+      description: "Basic information about the order this was copied from, if any. This field may be NULL."
+      properties:
+        id:
+          type: integer
+        number:
+          type: integer
+        status:
+          type: string
+    Quote:
+      type: object
+      description: "Data representing a Quote"
+      properties:
+        id:
+          type: integer
+        number:
+          $ref: '#/components/schemas/QuoteNumber'
+        sales_person:
+          $ref: '#/components/schemas/QuoteSalesPerson'
+        customer:
+          $ref: '#/components/schemas/QuoteCustomer'
+        tax_rate:
+          type: number
+          format: float
+        tax_cost:
+          type: number
+          format: float
+        private_notes:
+          type: string
+          nullable: true
+        quote_items:
+          type: array
+          items:
+            $ref: '#/components/schemas/QuoteItem'
+        status:
+          type: string
+          enum: ['draft', 'outstanding', 'expired', 'cancelled', 'partially_accepted', 'accepted', 'trash', 'lost']
+        sent_date:
+          type: string
+          format: date-time
+          nullable: true
+        expired_date:
+          type: string
+          format: date-time
+        quote_notes:
+          type: string
+          nullable: true
+        export_controlled:
+          type: boolean
+          description: "Whether or not this quote contains data that is export controlled (ITAR) by the US Government."
+        digital_last_viewed_on:
+          type: string
+          format: date-time
+          nullable: true
+          description: "The last time the quote recipient viewed the quote"
+        expired:
+          type: boolean
+        request_for_quote:
+          type: boolean
+          nullable: true
+        parent_quote:
+          $ref: '#/components/schemas/ParentQuote'
+        parent_supplier_order:
+          $ref: '#/components/schemas/ParentSupplierOrder'
+        authenticated_pdf_quote_url:
+          type: string
+          format: url
+          nullable: true
+        is_unviewed_drafted_rfq:
+          type: boolean
+          description: "Quotes can be automatically generated by a supplier's RFQ form. If this quote was drafted via an RFQ and has not been viewed, this will be true."
+        created:
+          type: string
+          format: date-time
+    OrderNumber:
+      type: integer
+      description: "A unique identifier for an Order"
+      example: 47
+    OrderAddressInfo:
+      type: object
+      properties:
+        id:
+          type: integer
+        address1:
+          type: string
+        address2:
+          type: string
+        business_name:
+          type: string
+        city:
+          type: string
+        country:
+          type: string
+        first_name:
+          type: string
+        last_name:
+          type: string
+        phone:
+          type: string
+        phone_ext:
+          type: string
+          nullable: true
+        postal_code:
+          type: string
+        state:
+          type: string
+    OrderCompany:
+      type: object
+      properties:
+        id:
+          type: integer
+        business_name:
+          type: string
+        erp_code:
+          type: string
+    OrderCustomer:
+      type: object
+      properties:
+        id:
+          type: integer
+        company:
+          $ref: '#/components/schemas/OrderCompany'
+        email:
+          type: string
+          format: email
+        first_name:
+          type: string
+        last_name:
+          type: string
+        phone:
+          type: string
+        phone_ext:
+          type: string
+    OrderMaterial:
+      type: object
+      description: "This can also be null"
+      properties:
+        id:
+          type: integer
+        display_name:
+          type: string
+        family:
+          type: string
+        material_class:
+          type: string
+        name:
+          type: string
+    CostingVariable:
+      type: object
+      properties:
+        label:
+          type: string
+        type:
+          type: string
+        value:
+          type: string
+    OperationQuantity:
+      type: object
+      properties:
+        price:
+          type: number
+          format: float
+        manual_price:
+          type: number
+          format: float
+          nullable: true
+        lead_time:
+          type: integer
+          nullable: true
+        manual_lead_time:
+          type: integer
+          nullable: true
+        quantity:
+          type: integer
+    Operation:
+      type: object
+      properties:
+        id:
+          type: integer
+        category:
+          type: string
+          enum: ['material', 'operation']
+        cost:
+          type: number
+          format: float
+        costing_variables:
+          type: array
+          items:
+            $ref: '#/components/schemas/CostingVariable'
+        quantities:
+          type: array
+          items:
+            $ref: '#/components/schemas/OperationQuantity'
+        is_finish:
+          type: boolean
+        is_outside_service:
+          type: boolean
+        name:
+          type: string
+        notes:
+          type: string
+          nullable: true
+        position:
+          type: integer
+          description: "The position of the order operation in the order display, indexed from 1. Note that the position applies across both material operations and order operations. TODO - this shows up as 0 if there is only one operation on the order?"
+        runtime:
+          type: number
+          format: float
+          nullable: true
+        setup_time:
+          type: number
+          format: float
+          nullable: true
+    OrderProcess:
+      type: object
+      properties:
+        id:
+          type: integer
+        external_name:
+          type: string
+        name:
+          type: string
+    OrderSupportingFile:
+      type: object
+      properties:
+        filename:
+          type: string
+        url:
+          type: string
+          format: url
+    OrderComponent:
+      type: object
+      properties:
+        id:
+          type: string
+        child_ids:
+          type: array
+          items:
+            type: integer
+        deliver_quantity:
+          type: integer
+          description: "The quantity of this component that must be delivered to satisfy the quantity specified by the customer as well as the yield specified for this component."
+        description:
+          type: string
+          nullable: true
+        export_controlled:
+          type: boolean
+          description: "Whether or not this order component contains data that is export controlled (ITAR) by the US Government."
+        finishes:
+          type: array
+          items:
+            type: string
+          description: "Note: this field is deprecated. Finishes now show up as Operations."
+        innate_quantity:
+          type: integer
+          description: "This field relates to assemblies. If you have any questions about assemblies please contact support."
+        is_root_component:
+          type: boolean
+        make_quantity:
+          type: integer
+          description: "The quantity of this component that must be made to satisfy the quantity specified by the customer as well as the yield specified for this component."
+        material:
+          $ref: '#/components/schemas/OrderMaterial'
+        material_operations:
+          type: array
+          items:
+            $ref: '#/components/schemas/Operation'
+        parent_ids:
+          type: array
+          items:
+            type: integer
+        part_name:
+          type: string
+        part_number:
+          type: string
+          nullable: true
+        part_url:
+          type: string
+          format: url
+        part_uuid:
+          type: string
+        process:
+          $ref: '#/components/schemas/OrderProcess'
+        revision:
+          type: string
+          nullable: true
+        shop_operations:
+          type: array
+          items:
+            $ref: '#/components/schemas/Operation'
+        supporting_files:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderSupportingFile'
+        type:
+          type: string
+          enum: ['assembled', 'manufactured', 'purchased']
+    OrderAddOn:
+      type: object
+      properties:
+        is_required:
+          type: boolean
+        name:
+          type: string
+        price:
+          type: number
+          format: float
+        quantity:
+          type: integer
+    OrderItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        components:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderComponent'
+        description:
+          type: string
+          nullable: true
+        expedite_revenue:
+          type: number
+          format: float
+          nullable: true
+        export_controlled:
+          type: boolean
+          description: "Whether or not this order item contains data that is export controlled (ITAR) by the US Government."
+        filename:
+          type: string
+        lead_days:
+          type: integer
+        markup_1_price:
+          type: number
+          format: float
+        markup_1_name:
+          type: string
+        markup_2_price:
+          type: number
+          format: float
+        markup_2_name:
+          type: string
+        private_notes:
+          type: string
+          nullable: true
+        public_notes:
+          type: string
+          nullable: true
+        quantity:
+          type: integer
+        quantity_outstanding:
+          type: integer
+        quote_item_id:
+          type: integer
+        quote_item_type:
+          type: string
+          enum: ['automatic', 'manual']
+          description: "Indicates whether the quote item is associated with a part (automatic pricing), or not (manual pricing)."
+        root_component_id:
+          type: integer
+        ships_on:
+          type: string
+          format: date
+        total_price:
+          type: number
+          format: float
+        unit_price:
+          type: number
+          format: float
+        base_price:
+          type: number
+          format: float
+        add_on_fees:
+          type: number
+          format: float
+          nullable: true
+        ordered_add_ons:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderAddOn'
+    OrderPaymentDetails:
+      type: object
+      properties:
+        card_brand:
+          type: string
+          nullable: true
+        card_last4:
+          type: string
+          nullable: true
+        net_payout:
+          type: number
+          format: float
+          nullable: true
+        payment_type:
+          type: string
+          enum: ['credit_card', 'purchase_order']
+        purchase_order_number:
+          type: string
+        purchasing_dept_contact_email:
+          type: string
+          format: email
+          nullable: true
+        purchasing_dept_contact_name:
+          type: string
+          nullable: true
+        shipping_cost:
+          type: number
+          format: float
+        subtotal:
+          type: number
+          format: float
+        tax_cost:
+          type: number
+          format: float
+        tax_rate:
+          type: number
+          format: float
+        payment_terms:
+          type: string
+          nullable: true
+        total_price:
+          type: number
+          format: float
+    OrderShipmentItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        order_item_id:
+          type: integer
+        quantity:
+          type: integer
+    OrderShipment:
+      type: object
+      properties:
+        id:
+          type: integer
+        pickup_recipient:
+          type: string
+          nullable: true
+        shipment_date:
+          type: string
+          format: date-time
+        shipment_items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderShipmentItem'
+        shipping_cost:
+          type: number
+          format: float
+        tracking_number:
+          type: string
+    OrderShippingOption:
+      type: object
+      properties:
+        customers_account_number:
+          type: string
+          nullable: true
+        customers_carrier:
+          type: string
+          enum: ['ups', 'fedex']
+          nullable: true
+        shipping_method:
+          type: string
+          enum: ['early_am_overnight', 'ground', 'next_day_air', 'second_day_air']
+          nullable: true
+        type:
+          type: string
+          enum: ['pickup', 'customers_shipping_account', 'suppliers_shipping_account']
+    Order:
+      type: object
+      properties:
+        billing_info:
+          $ref: '#/components/schemas/OrderAddressInfo'
+        created:
+          type: string
+          format: date-time
+        customer:
+          $ref: '#/components/schemas/OrderCustomer'
+        deliver_by:
+          type: string
+          format: date-time
+          nullable: true
+        number:
+          $ref: '#/components/schemas/OrderNumber'
+        order_items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItem'
+        payment_details:
+          $ref: '#/components/schemas/OrderPaymentDetails'
+        private_notes:
+          type: string
+          nullable: true
+        quote_number:
+          type: integer
+        shipments:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderShipment'
+        shipping_info:
+          $ref: '#/components/schemas/OrderAddressInfo'
+        shipping_option:
+          $ref: '#/components/schemas/OrderShippingOption'
+        ships_on:
+          type: string
+          format: date
+        status:
+          type: string
+          enum: ['pending', 'confirmed', 'on_hold', 'in_process', 'completed', 'cancelled']
