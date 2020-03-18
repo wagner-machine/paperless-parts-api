@@ -70,6 +70,31 @@ paths:
                 title: Quote not found
                 type: string
                 example: "Error: Not Found"
+                
+  /orders/public/new_sent:
+    get:
+      summary: "List new order numbers"
+      description: "List the numbers of new orders that have been sent. If the number of the last known sent order is supplied, this endpoint will return a list of the numbers of the orders sent after the specified order. If no number is provided, this endpoint will return a list of the numbers of all sent orders. Note that the quote numbers will be returned in the order the orders were sent, not necessarily in ascending numerical order."
+      operationId: 'NewOrderNumbers'
+      parameters:
+        - $ref: '#/components/parameters/last_order'
+      tags:
+        - Orders
+      responses:
+        200:
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderNumberArray'
+        404:
+          description: Not found response
+          content:
+            text/plain:
+              schema:
+                title: Order not found
+                type: string
+                example: "Error: Not Found"
 
   /orders/public/{orderNumber}:
     get:
@@ -95,6 +120,26 @@ paths:
                 title: Quote not found
                 type: string
                 example: "Error: Not Found"
+                
+  /process_classes:
+    options:
+      summary: "Get process class options"
+      operationId: 'ProcessClassOptions'
+      tags:
+        - Process classes
+      responses:
+        204:
+          description: No content
+    get:
+      summary: "Get all process classes"
+      description: "Get all process classes defined in the user instance"
+      responses:
+        200:
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProcessClassArray'
 
 components:
 
@@ -112,6 +157,12 @@ components:
       description: "**Last known sent quote number**. You may supply the number of the last known quote."
       schema:
         $ref: '#/components/schemas/QuoteNumber'
+    last_order:
+      name: last_order
+      in: query
+      description: "**Last known sent order number**. You may supply the number of the last known order."
+      schema:
+        $ref: '#/components/schemas/OrderNumber'        
     quoteNumber:
       name: quoteNumber
       in: path
@@ -128,6 +179,22 @@ components:
         $ref: '#/components/schemas/OrderNumber'
 
   schemas:
+    ProcessClassArray:
+      type: array
+      description: "Array of process classes represents a grouping of processes."
+      items:
+        $ref: '#/components/schemas/ProcessClass'
+    ProcessClass:
+      type: object
+      description: "Process class represents a grouping of processes."
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        class_viewer_key:
+          type: string
+          nullable: true
     QuoteNumber:
       type: integer
       description: "A unique identifier for a Quote"
